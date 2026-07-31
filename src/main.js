@@ -13,23 +13,28 @@ import {
 } from './js/render-functions';
 
 const form = document.querySelector('.form');
-const loadMoreBtn = document.querySelector('.load-more');
 
 let currentQuery = '';
 let page = 1;
 let totalHits = 0;
 
+const PER_PAGE = 15;
+
 form.addEventListener('submit', onSearch);
-loadMoreBtn.addEventListener('click', onLoadMore);
+
+document.querySelector('.load-more').addEventListener('click', onLoadMore);
 
 async function onSearch(event) {
   event.preventDefault();
 
   currentQuery = event.currentTarget.elements['search-text'].value.trim();
 
-  if (!currentQuery) return;
+  if (!currentQuery) {
+    return;
+  }
 
   page = 1;
+  totalHits = 0;
 
   clearGallery();
   hideLoadMoreButton();
@@ -52,13 +57,11 @@ async function onSearch(event) {
 
     createGallery(data.hits);
 
-    const totalPages = Math.ceil(totalHits / 15);
+    const totalPages = Math.ceil(totalHits / PER_PAGE);
 
     if (page < totalPages) {
       showLoadMoreButton();
     } else {
-      hideLoadMoreButton();
-
       iziToast.info({
         message: "We're sorry, but you've reached the end of search results.",
         position: 'topRight',
@@ -78,6 +81,7 @@ async function onSearch(event) {
 async function onLoadMore() {
   page += 1;
 
+  hideLoadMoreButton();
   showLoader();
 
   try {
@@ -87,14 +91,16 @@ async function onLoadMore() {
 
     const card = document.querySelector('.gallery-item');
 
-    const cardHeight = card.getBoundingClientRect().height;
+    if (card) {
+      const cardHeight = card.getBoundingClientRect().height;
 
-    window.scrollBy({
-      top: cardHeight * 2,
-      behavior: 'smooth',
-    });
+      window.scrollBy({
+        top: cardHeight * 2,
+        behavior: 'smooth',
+      });
+    }
 
-    const totalPages = Math.ceil(totalHits / 15);
+    const totalPages = Math.ceil(totalHits / PER_PAGE);
 
     if (page >= totalPages) {
       hideLoadMoreButton();
@@ -103,12 +109,16 @@ async function onLoadMore() {
         message: "We're sorry, but you've reached the end of search results.",
         position: 'topRight',
       });
+    } else {
+      showLoadMoreButton();
     }
   } catch {
     iziToast.error({
       message: 'Something went wrong. Please try again!',
       position: 'topRight',
     });
+
+    showLoadMoreButton();
   } finally {
     hideLoader();
   }
